@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fleet Dashboard - GPS Tracking Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=SF+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
+    <style>
+        :root {
+            /* Colors - Monochromatic with single accent */
+            --primary: #0f1419;
+            --primary-light: #1a2332;
+            --accent: #2563eb;
+            --accent-light: #3b82f6;
+            --accent-lighter: #dbeafe;
+            
+            /* Neutrals */
+            --white: #ffffff;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            
+            /* Semantic colors */
+            --success: #10b981;
+            --success-light: #ecfdf5;
+            --error: #ef4444;
+            --error-light: #fef2f2;
+            --warning: #f59e0b;
+            --warning-light: #fffbeb;
+            
+            /* Spacing */
+            --space-xs: 0.25rem;
+            --space-sm: 0.5rem;
+            --space-md: 1rem;
+            --space-lg: 1.5rem;
+            --space-xl: 2rem;
+            --space-2xl: 3rem;
+            
+            /* Shadows */
+            --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            
+            /* Borders */
+            --border-radius: 8px;
+            --border-radius-lg: 12px;
+            --border-radius-xl: 16px;
+            
+            /* Typography */
+            --font-size-xs: 0.75rem;
+            --font-size-sm: 0.875rem;
+            --font-size-base: 1rem;
+            --font-size-lg: 1.125rem;
+            --font-size-xl: 1.25rem;
+            --font-size-2xl: 1.5rem;
+            --font-size-3xl: 1.875rem;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--gray-50);
+            color: var(--gray-900);
+            line-height: 1.6;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .header {
+            background-color: var(--white);
+            border-bottom: 1px solid var(--gray-200);
+            padding: var(--space-lg) var(--space-xl);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            box-shadow: var(--shadow-xs);
+        }
+
+        .header-content {
+            max-width: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: var(--font-size-2xl);
+            font-weight: 800;
+            color: var(--gray-900);
+            letter-spacing: -0.025em;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .search-input {
+            width: 280px;
+            padding: var(--space-sm) var(--space-md);
+            font-size: var(--font-size-sm);
+            font-weight: 400;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--gray-900);
+            background-color: var(--gray-100);
+            border: 1px solid transparent;
+            border-radius: var(--border-radius);
+            transition: all 0.15s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            background-color: var(--white);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1);
+        }
+
+        .search-input::placeholder {
+            color: var(--gray-500);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-sm) var(--space-md);
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            color: var(--white);
+            background-color: var(--accent);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-light);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            color: var(--gray-700);
+            background-color: var(--white);
+            border: 1px solid var(--gray-300);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--gray-50);
+        }
+
+        .nav-btn {
+            color: var(--gray-600);
+            background-color: transparent;
+            border: 1px solid transparent;
+        }
+
+        .nav-btn:hover {
+            color: var(--gray-900);
+            background-color: var(--gray-100);
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 380px;
+            background-color: var(--white);
+            border-right: 1px solid var(--gray-200);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .stats-panel {
+            padding: var(--space-xl);
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .stats-header {
+            margin-bottom: var(--space-lg);
+        }
+
+        .stats-title {
+            font-size: var(--font-size-xl);
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: var(--space-sm);
+        }
+
+        .last-update {
+            font-size: var(--font-size-xs);
+            font-weight: 400;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--gray-500);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-md);
+            margin-bottom: var(--space-lg);
+        }
+
+        .stat-card {
+            padding: var(--space-md);
+            background-color: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius-lg);
+            text-align: center;
+            transition: all 0.15s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--gray-300);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .stat-value {
+            font-size: var(--font-size-2xl);
+            font-weight: 500;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--gray-900);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: var(--font-size-xs);
+            color: var(--gray-600);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: var(--space-xs);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .provider-breakdown {
+            margin-top: var(--space-lg);
+        }
+
+        .breakdown-title {
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: var(--space-md);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .provider-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-sm) 0;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .provider-item:last-child {
+            border-bottom: none;
+        }
+
+        .provider-name {
+            font-size: var(--font-size-sm);
+            color: var(--gray-700);
+            font-weight: 500;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .provider-count {
+            font-size: var(--font-size-sm);
+            color: var(--gray-900);
+            font-weight: 500;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .trailers-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--space-md);
+        }
+
+        .trailers-header {
+            padding: var(--space-md) var(--space-sm);
+            margin-bottom: var(--space-md);
+        }
+
+        .trailers-title {
+            font-size: var(--font-size-lg);
+            font-weight: 700;
+            color: var(--gray-900);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .trailer-card {
+            background-color: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius-lg);
+            padding: var(--space-md);
+            margin-bottom: var(--space-sm);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .trailer-card:hover {
+            border-color: var(--accent-light);
+            box-shadow: var(--shadow-sm);
+            transform: translateY(-1px);
+        }
+
+        .trailer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--space-sm);
+        }
+
+        .trailer-id {
+            font-size: var(--font-size-base);
+            font-weight: 700;
+            color: var(--gray-900);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .company-badge {
+            display: inline-block;
+            padding: var(--space-xs) var(--space-sm);
+            font-size: var(--font-size-xs);
+            font-weight: 600;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .company-nrg {
+            color: var(--accent);
+            background-color: var(--accent-lighter);
+        }
+
+        .company-greenway {
+            color: var(--success);
+            background-color: var(--success-light);
+        }
+
+        .company-other {
+            color: var(--gray-600);
+            background-color: var(--gray-100);
+        }
+
+        .trailer-details {
+            display: grid;
+            gap: var(--space-xs);
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: var(--font-size-sm);
+        }
+
+        .detail-label {
+            color: var(--gray-600);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .detail-value {
+            color: var(--gray-900);
+            font-weight: 500;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .status-moving {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .status-parked {
+            color: var(--warning);
+            font-weight: 600;
+        }
+
+        .provider-badge {
+            font-size: var(--font-size-xs);
+            color: var(--gray-600);
+            background-color: var(--gray-100);
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+            background-color: var(--gray-100);
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            inset: 0;
+            background-color: var(--white);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .loading-content {
+            text-align: center;
+            padding: var(--space-2xl);
+            background-color: var(--white);
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--gray-200);
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--gray-200);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto var(--space-md);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: var(--font-size-base);
+            color: var(--gray-700);
+            font-weight: 500;
+        }
+
+        .alert {
+            position: fixed;
+            top: 80px;
+            right: var(--space-xl);
+            max-width: 400px;
+            padding: var(--space-md);
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            z-index: 10000;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid;
+        }
+
+        .alert-success {
+            color: #065f46;
+            background-color: var(--success-light);
+            border-color: #a7f3d0;
+        }
+
+        .alert-error {
+            color: #991b1b;
+            background-color: var(--error-light);
+            border-color: #fecaca;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: var(--space-2xl);
+            color: var(--gray-500);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .empty-state-icon {
+            font-size: var(--font-size-3xl);
+            margin-bottom: var(--space-md);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        /* Custom marker styles */
+        .custom-marker {
+            border-radius: 50%;
+            border: 2px solid var(--white);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Marker cluster customization */
+        .marker-cluster {
+            background-color: rgba(37, 99, 235, 0.2);
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+        }
+
+        .marker-cluster div {
+            background-color: #2563eb;
+            color: white;
+            font-weight: 700;
+            font-size: 12px;
+            border-radius: 50%;
+            width: 30px !important;
+            height: 30px !important;
+            margin: 3px;
+            line-height: 24px;
+            text-align: center;
+        }
+
+        .marker-cluster-small {
+            background-color: rgba(16, 185, 129, 0.8);
+        }
+
+        .marker-cluster-small div {
+            background-color: rgba(16, 185, 129, 0.9);
+        }
+
+        .marker-cluster-medium {
+            background-color: rgba(245, 158, 11, 0.8);
+        }
+
+        .marker-cluster-medium div {
+            background-color: rgba(245, 158, 11, 0.9);
+        }
+
+        .marker-cluster-large {
+            background-color: rgba(239, 68, 68, 0.8);
+        }
+
+        .marker-cluster-large div {
+            background-color: rgba(239, 68, 68, 0.9);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                left: -100%;
+                top: 0;
+                height: 100%;
+                z-index: 75;
+                transition: left 0.3s ease;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            .header-actions {
+                flex-direction: column;
+                gap: var(--space-sm);
+                align-items: stretch;
+            }
+
+            .search-input {
+                width: 200px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .main-container {
+                position: relative;
+            }
+        }
+
+        /* Scrollbar styling */
+        .trailers-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .trailers-list::-webkit-scrollbar-track {
+            background: var(--gray-100);
+        }
+
+        .trailers-list::-webkit-scrollbar-thumb {
+            background: var(--gray-300);
+            border-radius: 3px;
+        }
+
+        .trailers-list::-webkit-scrollbar-thumb:hover {
+            background: var(--gray-400);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>Fleet Dashboard</h1>
+            <div class="header-actions">
+                <div class="search-container">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Search trailers...">
+                </div>
+                <button class="btn btn-secondary" onclick="refreshData(event)">Refresh</button>
+                <button class="btn btn-secondary" onclick="testConnections(event)">Test All</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <aside class="sidebar">
+            <div class="stats-panel">
+                <div class="stats-header">
+                    <h2 class="stats-title">Fleet Overview</h2>
+                    <div class="last-update">
+                        Last update: <span id="lastUpdate">Never</span>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalCount">0</div>
+                        <div class="stat-label">Total Trailers</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="movingCount">0</div>
+                        <div class="stat-label">Moving</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="nrgCount">0</div>
+                        <div class="stat-label">NRG Trucking</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="greenwayCount">0</div>
+                        <div class="stat-label">Greenway</div>
+                    </div>
+                </div>
+
+                <div class="provider-breakdown">
+                    <h3 class="breakdown-title">By Provider</h3>
+                    <div id="providerBreakdown">
+                        <!-- Provider breakdown will be populated here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="trailers-list">
+                <div class="trailers-header">
+                    <h3 class="trailers-title">Trailers</h3>
+                </div>
+                <div id="trailersList">
+                    <!-- Trailers will be populated here -->
+                </div>
+            </div>
+        </aside>
+
+        <main class="map-container">
+            <div id="map"></div>
+            <div class="loading-overlay" id="loading">
+                <div class="loading-content">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Loading GPS data...</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+    <script>
+        let map;
+        let markers = {};
+        let markerClusterGroup;
+        let trailersData = [];
+        let filteredData = [];
+
+        // Initialize map with clustering
+        function initMap() {
+            map = L.map('map').setView([39.8283, -98.5795], 4); // Center of USA
+            
+            // Define different map layers
+            const streetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            });
+            
+            const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '© Esri, Maxar, Earthstar Geographics',
+                maxZoom: 19
+            });
+            
+            const hybridMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '© Esri, Maxar, Earthstar Geographics',
+                maxZoom: 19
+            });
+            
+            // Add labels overlay for hybrid view
+            const labelsOverlay = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '© Esri',
+                maxZoom: 19
+            });
+            
+            // Set default layer
+            streetMap.addTo(map);
+            
+            // Create layer control
+            const baseMaps = {
+                "🗺️ Street": streetMap,
+                "🛰️ Satellite": satelliteMap,
+                "🌍 Hybrid": L.layerGroup([hybridMap, labelsOverlay])
+            };
+            
+            // Add layer control to map
+            L.control.layers(baseMaps, null, {
+                position: 'topright',
+                collapsed: false
+            }).addTo(map);
+
+            // Initialize marker cluster group (same as before)
+            markerClusterGroup = L.markerClusterGroup({
+                maxClusterRadius: 50,
+                spiderfyOnMaxZoom: true,
+                showCoverageOnHover: false,
+                zoomToBoundsOnClick: true,
+                iconCreateFunction: function(cluster) {
+                    const count = cluster.getChildCount();
+                    let className = 'marker-cluster-';
+                    
+                    if (count < 10) {
+                        className += 'small';
+                    } else if (count < 100) {
+                        className += 'medium';
+                    } else {
+                        className += 'large';
+                    }
+                    
+                    return new L.DivIcon({
+                        html: '<div><span>' + count + '</span></div>',
+                        className: 'marker-cluster ' + className,
+                        iconSize: new L.Point(40, 40)
+                    });
+                }
+            });
+            
+            map.addLayer(markerClusterGroup);
+        }
+
+        // Load trailer data from API
+        async function loadTrailerData() {
+            showLoading(true);
+            try {
+                const searchInput = document.getElementById('searchInput');
+                const searchTerm = searchInput ? searchInput.value : '';
+                const url = searchTerm ? `/api/trailers?search=${encodeURIComponent(searchTerm)}` : '/api/trailers';
+                
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    trailersData = result.data || [];
+                    filteredData = result.data || [];
+                    
+                    updateDisplay();
+                    updateStats();
+                } else {
+                    throw new Error(result.message || 'Failed to load trailer data');
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showAlert(`Connection error: ${error.message}`, 'error');
+                
+                // Set empty data on error
+                trailersData = [];
+                filteredData = [];
+                updateDisplay();
+            }
+            showLoading(false);
+        }
+
+        async function refreshData(event) {
+            const btn = event ? event.target : document.querySelector('[onclick="refreshData(event)"]');
+            if (!btn) return;
+            
+            const originalText = btn.textContent;
+            btn.innerHTML = '<span class="spinner" style="width: 16px; height: 16px; margin-right: 8px;"></span>Refreshing...';
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/refresh', { 
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    await loadTrailerData();
+                    showAlert(`Data refreshed: ${result.count || 0} trailers loaded`, 'success');
+                } else {
+                    showAlert('Failed to refresh data', 'error');
+                }
+            } catch (error) {
+                console.error('Refresh error:', error);
+                showAlert('Failed to refresh data', 'error');
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // Update map markers with clustering
+        function updateDisplay() {
+            try {
+                markerClusterGroup.clearLayers();
+                markers = {};
+                
+                let addedMarkers = 0;
+                filteredData.forEach(trailer => {
+                    if (trailer.latitude && trailer.longitude && 
+                        !isNaN(trailer.latitude) && !isNaN(trailer.longitude) &&
+                        trailer.latitude !== 0 && trailer.longitude !== 0) {
+                        try {
+                            const marker = createMarker(trailer);
+                            if (marker) {
+                                markers[trailer.id] = marker;
+                                markerClusterGroup.addLayer(marker);
+                                addedMarkers++;
+                            }
+                        } catch (markerError) {
+                            console.warn('Failed to create marker for trailer:', trailer.id, markerError);
+                        }
+                    }
+                });
+                
+                updateTrailersList();
+                
+                if (Object.keys(markers).length > 0) {
+                    try {
+                        const bounds = markerClusterGroup.getBounds();
+                        if (bounds.isValid()) {
+                            map.fitBounds(bounds.pad(0.1));
+                        }
+                    } catch (boundsError) {
+                        console.log('Map bounds fitting skipped:', boundsError.message);
+                    }
+                }
+                
+                console.log(`✅ Updated display: ${addedMarkers} markers added`);
+            } catch (error) {
+                console.error('Error updating display:', error);
+            }
+        }
+
+        // Create marker for trailer
+        function createMarker(trailer) {
+            const accountStr = String(trailer.account || '');
+            let color;
+            
+            if (accountStr === 'NRG Trucking' || accountStr.includes('NRG Trucking')) {
+                color = '#2563eb'; // Blue for NRG
+            } else if (accountStr.includes('Greenway')) {
+                color = '#10b981'; // Green for Greenway
+            } else {
+                color = '#6b7280'; // Gray for others
+            }
+            
+            const isMoving = trailer.status === 'Moving';
+            
+            const icon = L.divIcon({
+                className: 'custom-marker-clean', // New class name
+                html: `<div style="
+                    background: ${color};
+                    width: 14px;
+                    height: 14px;
+                    border-radius: 50%;
+                    border: ${isMoving ? '2px solid #10b981' : '2px solid #ffffff'};
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+                "></div>`,
+                iconSize: [18, 18],
+                iconAnchor: [9, 9]
+            });
+            
+            const marker = L.marker([trailer.latitude, trailer.longitude], { icon });
+            
+            // ... rest of popup code stays the same
+            const popupContent = `
+                <div style="min-width: 200px; font-family: 'Inter', sans-serif;">
+                    <h4 style="margin-bottom: 8px; color: #111827;">${trailer.originalId || trailer.id}</h4>
+                    <p style="margin: 4px 0; color: #374151;"><strong>Company:</strong> ${trailer.account}</p>
+                    <p style="margin: 4px 0; color: #374151;"><strong>Provider:</strong> ${trailer.provider}</p>
+                    <p style="margin: 4px 0; color: #374151;"><strong>Driver:</strong> ${trailer.driver}</p>
+                    <p style="margin: 4px 0; color: #374151;"><strong>Status:</strong> <span style="color: ${isMoving ? '#10b981' : '#f59e0b'}; font-weight: 600;">${trailer.status}</span></p>
+                    <p style="margin: 4px 0; color: #374151;"><strong>Speed:</strong> ${trailer.speed} mph</p>
+                    <p style="margin: 4px 0; color: #374151;"><strong>Last Update:</strong> ${formatTime(trailer.lastUpdate)}</p>
+                    ${trailer.address !== 'Unknown' ? `<p style="margin: 4px 0; color: #374151;"><strong>Location:</strong> ${trailer.address}</p>` : ''}
+                </div>
+            `;
+            
+            marker.bindPopup(popupContent);
+            return marker;
+        }
+        
+        // Update trailers list in sidebar
+        function updateTrailersList() {
+            const container = document.getElementById('trailersList');
+            
+            if (filteredData.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🚛</div>
+                        <p>No trailers found</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            filteredData.forEach(trailer => {
+                const accountStr = String(trailer.account || '');
+                const companyClass = (accountStr === 'NRG Trucking' || accountStr.includes('NRG Trucking')) ? 'company-nrg' :
+                                    (accountStr.includes('Greenway')) ? 'company-greenway' : 'company-other';
+                
+                const companyName = (accountStr === 'NRG Trucking' || accountStr.includes('NRG Trucking')) ? 'NRG' :
+                                (accountStr.includes('Greenway')) ? 'Greenway' : 'Other';
+                
+                html += `
+                    <div class="trailer-card" onclick="centerOnTrailer('${trailer.id}')">
+                        <div class="trailer-header">
+                            <div class="trailer-id">${trailer.originalId || trailer.id}</div>
+                            <div>
+                                <span class="company-badge ${companyClass}">${companyName}</span>
+                            </div>
+                        </div>
+                        <div class="trailer-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Driver</span>
+                                <span class="detail-value">${trailer.driver || 'Unknown'}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Status</span>
+                                <span class="detail-value status-${(trailer.status || 'unknown').toLowerCase()}">${trailer.status || 'Unknown'}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Speed</span>
+                                <span class="detail-value">${trailer.speed || 0} mph</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Provider</span>
+                                <span class="provider-badge">${trailer.provider || 'Unknown'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // Update statistics
+        async function updateStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const stats = result.data;
+                    document.getElementById('totalCount').textContent = stats.total || 0;
+                    document.getElementById('movingCount').textContent = stats.moving || 0;
+                    document.getElementById('lastUpdate').textContent = formatTime(new Date());
+                    
+                    // Count by company - more robust checking
+                    let nrgCount = 0;
+                    let greenwayCount = 0;
+                    
+                    if (stats.accounts) {
+                        Object.entries(stats.accounts).forEach(([account, count]) => {
+                            if (account === 'NRG Trucking' || account.includes('NRG')) {
+                                nrgCount += count;
+                            } else if (account.includes('Greenway')) {
+                                greenwayCount += count;
+                            }
+                        });
+                    }
+                    
+                    document.getElementById('nrgCount').textContent = nrgCount;
+                    document.getElementById('greenwayCount').textContent = greenwayCount;
+                    
+                    // Update provider breakdown
+                    const providerDiv = document.getElementById('providerBreakdown');
+                    providerDiv.innerHTML = '';
+                    
+                    if (stats.providers && Object.keys(stats.providers).length > 0) {
+                        Object.entries(stats.providers).forEach(([provider, count]) => {
+                            const providerItem = document.createElement('div');
+                            providerItem.className = 'provider-item';
+                            
+                            providerItem.innerHTML = `
+                                <span class="provider-name">${provider}</span>
+                                <span class="provider-count">${count}</span>
+                            `;
+                            providerDiv.appendChild(providerItem);
+                        });
+                    } else {
+                        providerDiv.innerHTML = '<div class="provider-item"><span class="provider-name">No data</span><span class="provider-count">0</span></div>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                // Set default values on error
+                document.getElementById('totalCount').textContent = '0';
+                document.getElementById('movingCount').textContent = '0';
+                document.getElementById('nrgCount').textContent = '0';
+                document.getElementById('greenwayCount').textContent = '0';
+            }
+        }
+
+        // Center map on specific trailer
+        function centerOnTrailer(trailerId) {
+            const marker = markers[trailerId];
+            if (marker) {
+                markerClusterGroup.zoomToShowLayer(marker, function() {
+                    map.setView(marker.getLatLng(), 12);
+                    marker.openPopup();
+                });
+            }
+        }
+
+        // Test all connections
+        async function testConnections(event) {
+            const btn = event ? event.target : document.querySelector('[onclick="testConnections(event)"]');
+            if (!btn) return;
+            
+            const originalText = btn.textContent;
+            btn.innerHTML = '<span class="spinner" style="width: 16px; height: 16px; margin-right: 8px;"></span>Testing...';
+            btn.disabled = true;
+            
+            try {
+                showAlert('Testing all provider connections...', 'success');
+                
+                const skyBitzResponse = await fetch('/api/test-skybitz');
+                const skyBitzResult = await skyBitzResponse.json();
+                
+                if (skyBitzResult.success) {
+                    showAlert(`Connections tested: ${skyBitzResult.totalTrailers} trailers found`, 'success');
+                } else {
+                    showAlert('Some connections failed. Check settings.', 'error');
+                }
+            } catch (error) {
+                console.error('Test connections error:', error);
+                showAlert('Failed to test connections', 'error');
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // Utility functions
+        function showLoading(show) {
+            const loadingEl = document.getElementById('loading');
+            if (loadingEl) {
+                loadingEl.style.display = show ? 'flex' : 'none';
+            }
+        }
+
+        function showAlert(message, type = 'success') {
+            // Remove existing alerts
+            const existingAlerts = document.querySelectorAll('.alert');
+            existingAlerts.forEach(alert => alert.remove());
+            
+            // Create new alert
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            alert.style.cursor = 'pointer';
+            alert.style.animation = 'slideInFromRight 0.3s ease-out';
+            
+            // Add click to dismiss
+            alert.addEventListener('click', function() {
+                this.style.animation = 'slideOutToRight 0.3s ease-in';
+                setTimeout(() => this.remove(), 300);
+            });
+            
+            document.body.appendChild(alert);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.style.animation = 'slideOutToRight 0.3s ease-in';
+                    setTimeout(() => {
+                        if (alert.parentNode) {
+                            alert.remove();
+                        }
+                    }, 300);
+                }
+            }, 5000);
+        }
+
+        function formatTime(dateString) {
+            if (!dateString) return 'Never';
+            try {
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) return 'Invalid';
+                
+                return date.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false 
+                });
+            } catch (error) {
+                return 'Error';
+            }
+        }
+
+        // Search functionality with debouncing
+        let searchTimeout;
+        
+        function initializeSearch() {
+            const searchInput = document.getElementById('searchInput');
+            if (!searchInput) return;
+            
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(async () => {
+                    try {
+                        await loadTrailerData();
+                    } catch (error) {
+                        console.error('Search error:', error);
+                    }
+                }, 300);
+            });
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚛 Initializing Fleet Dashboard...');
+            
+            try {
+                initMap();
+                loadTrailerData();
+                initializeSearch();
+                
+                console.log('✅ Dashboard initialized successfully');
+            } catch (error) {
+                console.error('❌ Dashboard initialization failed:', error);
+                showAlert('Failed to initialize dashboard', 'error');
+            }
+        });
+
+        // Add animation CSS
+        const animationStyles = `
+            @keyframes slideInFromRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            
+            @keyframes slideOutToRight {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = animationStyles;
+        document.head.appendChild(styleSheet);
+    </script>
+</body>
+</html>
